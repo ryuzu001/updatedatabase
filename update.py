@@ -98,9 +98,8 @@ database.format(cellA1Diff, {
 
 print()
 print("Column B, starting at current cell difficulty, finding next difficulty.")
-print()
 
-testVar = database.get(cellA1Diff + ":B" + str(cell.row + 90), value_render_option="FORMULA")
+testVar = database.get(cellA1Diff + ":B" + str(cell.row + 100), value_render_option="FORMULA")  # searches 100 lines below current diff. If more than 100 reviews, this will need to be updated.
 
 flat_list = []
 for sublist in testVar:
@@ -110,10 +109,27 @@ for sublist in testVar:
         for item in sublist:
             flat_list.append(item)
 
+# remove current difficulty to search for next difficulty
+flat_list.pop(0)
+
+nextDiff = 0
+
 for i in range(len(flat_list)):
-    print(flat_list[i])
+    if (flat_list[i] != "[empty line]"):
+        nextDiff = i
+        break
+        
+nextDiff += 1
+print ("Next difficulty found at row " + str(nextDiff + cell.row))
 
+# add review
+database.insert_row(rowToInsert, index=int(nextDiff + cell.row))
 
+# format newly inserted review
+print("Formatting cells C, D and E")
+database.format('C' + str(nextDiff + cell.row), {"wrapStrategy":"WRAP"})
+database.format('D' + str(nextDiff + cell.row), {"horizontalAlignment":"CENTER"})
+database.format('E' + str(nextDiff + cell.row), {"horizontalAlignment":"CENTER"})
 
 # data = sheet.get_all_records()  # Get a list of all records
 
