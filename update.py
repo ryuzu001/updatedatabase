@@ -11,7 +11,7 @@ client = gspread.authorize(creds)
 
 # Get spreadsheets
 database = client.open("Copy of UCR class difficulty database").sheet1         # The name of the database spreadsheet
-responses = client.open("ucr survey (Responses)").sheet1  # The name of the responses spreadsheet
+responses = client.open("responsesTEST").sheet1  # The name of the responses spreadsheet
 
 # Use input params as start/end lines
 if (len(sys.argv) != 3):
@@ -36,15 +36,10 @@ for i in range(startLine, endLine + 1):
     # grab line
     line = responses.row_values(i)
 
-    print("processing line " + str(i))
-    pprint(line)
-    print()
-
     # separate out different answers
     respDate = line[0]
     respClass = line[1]
     respDiff = line[2]
-    respComment = line[3]
 
     # format class name to upper, remove spaces
     respClass = respClass.upper()
@@ -54,10 +49,14 @@ for i in range(startLine, endLine + 1):
     respDateSpace = respDate.find(' ')
     respDate = respDate[:respDateSpace]
 
-    # build row to insert in database
-    rowToInsert = ["", "", respComment, respDiff, respDate]
+    print("processing line " + str(i))
+    pprint(line)
+    print()
 
-    # find location to insert
+    # allow time for user to review line, and help prevent APIError 429 RESOURCE_EXHAUSTED.
+    time.sleep(2)
+
+    # find location to class
     cell = database.acell('A1')
 
     try:
@@ -88,44 +87,60 @@ for i in range(startLine, endLine + 1):
             }
         })
 
-    # find place to insert review, difficulty, date
-    print("Column B: starting at current cell difficulty, finding next difficulty.")
+    # handle reviews with no comment
+    if (len(line) != 4):
+        print("No review found, skipping add review")
+    else:
+        # Review has a comment, get comment        
+        respComment = line[3]
 
-    diffList = database.get(cellA1Diff + ":B" + str(cell.row + 100), value_render_option="FORMULA")  # searches 100 lines below current diff. If more than 100 reviews, this will need to be updated.
-    empty_line = "[empty line]"  # update this string into a value that won't be entered as a comment.
+        # build row to insert in database
+        rowToInsert = ["", "", respComment, respDiff, respDate]
 
-    flat_list = []
-    for sublist in diffList:
-        if len(sublist) == 0:
-            flat_list.append(empty_line)
-        else:
-            for item in sublist:
-                flat_list.append(item)
+        # find place to insert review, difficulty, date
+        print("Finding next difficulty...")
 
-    # remove current difficulty to search for next difficulty
-    flat_list.pop(0)
+        diffList = database.get(cellA1Diff + ":B" + str(cell.row + 100), value_render_option="FORMULA")  # searches 100 lines below current diff. If more than 100 reviews, this will need to be updated.
+        empty_line = "[empty string]"  # update this string into a value that won't be entered as a comment.
 
-    nextDiff = 0
+        flat_list = []
+        for sublist in diffList:
+            if len(sublist) == 0:
+                flat_list.append(empty_line)
+            else:
+                for item in sublist:
+                    flat_list.append(item)
 
-    for i in range(len(flat_list)):
-        if (flat_list[i] != empty_line):
-            nextDiff = i
-            break
-            
-    nextDiff += 1
-    print("Next difficulty found at cell B" + str(nextDiff + cell.row))
+        # remove current difficulty to search for next difficulty
+        flat_list.pop(0)
 
-    # add review
-    database.insert_row(rowToInsert, index=int(nextDiff + cell.row))
-    print("Row insert successful")
+        nextDiff = 0
 
-    # format newly inserted review
-    print("Formatting new row")
-    database.format('C' + str(nextDiff + cell.row), {"wrapStrategy":"WRAP"})
-    database.format('D' + str(nextDiff + cell.row), {"horizontalAlignment":"CENTER"})
-    database.format('E' + str(nextDiff + cell.row), {"horizontalAlignment":"CENTER"})
-    database.format('A' + str(nextDiff + cell.row) + ':E' + str(nextDiff + cell.row), {"backgroundColor":{"red":1,"green":1,"blue":1}})
+        for i in range(len(flat_list)):
+            if (flat_list[i] != empty_line):
+                nextDiff = i
+                break
+                
+        nextDiff += 1
+        print("Next difficulty found at cell B" + str(nextDiff + cell.row))
 
+        # add review
+        database.insert_row(rowToInsert, index=int(nextDiff + cell.row))
+        print("Row insert successful")
+
+        database.format('A' + str(nextDiff + cell.row) + ':E' + str(nextDiff + cell.row), {"backgroundColor":{"red":1,"green":1,"blue":1}})
     print("----------------------------------")
+
+    # allow time for user to review
+    time.sleep(2)
+
+# format all rows
+print("Formatting all rows")
+
+# Wrap column C
+database.format('C', {"wrapStrategy":"WRAP"})
+
+# Center align columns D and E
+database.format('D:E', {"horizontalAlignment":"CENTER"})
 
 print("Success! Added " + str(total) + " reviews.")
