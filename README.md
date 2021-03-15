@@ -35,6 +35,8 @@ Finally, navigate to the location of `update.py` and run it. The first parameter
 
 `py update.py 400 500` will look at the responses spreadsheet lines 400-500 inclusive and update the database with those reviews.
 
+![Example Image](https://github.com/ryuzu001/updatedatabase/blob/master/images/running.PNG)
+
 ------------
 
 # Additional Info
