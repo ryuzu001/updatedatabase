@@ -10,8 +10,8 @@ creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", sco
 client = gspread.authorize(creds)
 
 # Get spreadsheets
-database = client.open("Copy of UCR class difficulty database").sheet1         # The name of the database spreadsheet
-responses = client.open("responsesTEST").sheet1  # The name of the responses spreadsheet
+database = client.open("UCR class difficulty database").sheet1         # The name of the database spreadsheet
+responses = client.open("ucr survey (Responses)").sheet1               # The name of the responses spreadsheet
 
 # Use input params as start/end lines
 if (len(sys.argv) != 3):
@@ -19,8 +19,15 @@ if (len(sys.argv) != 3):
     print("Example: 'py update.py 4 5' will update based on lines 4 and 5.")
     sys.exit()
 
-startLine = int(sys.argv[1])
-endLine = int(sys.argv[2])
+startLine = 0
+endLine = 0
+try:
+    startLine = int(sys.argv[1])
+    endLine = int(sys.argv[2])
+except:
+    print("Please enter valid parameters.")
+    print("Example: 'py update.py 4 5' will update based on lines 4 and 5.")
+    sys.exit()
 
 print("Starting to process responses spreadsheet on line " + str(startLine) + " and ending on line " + str(endLine) + ".")
 total = endLine - startLine + 1
@@ -32,9 +39,16 @@ if (total <= 0):
     print("Error - negative lines to process")
     sys.exit()
 
+# all input validated, loop through lines and update
 for i in range(startLine, endLine + 1):
+
     # grab line
-    line = responses.row_values(i)
+    line = []
+    try:
+        line = responses.row_values(i)
+    except:
+        print("Empty line found at " + str(i) + ". Please try again with valid line numbers.")
+        sys.exit()
 
     # separate out different answers
     respDate = line[0]
@@ -71,6 +85,14 @@ for i in range(startLine, endLine + 1):
     cellA1Diff = "B" + str(cell.row)
     avgDiff = database.acell(cellA1Diff, value_render_option='FORMULA').value
 
+    # class is listed under 2 names (ie, CS111 and MATH111), and the difficulty reads 'See [class]'
+    if (avgDiff[:3] == "See"):
+        # Find the matching class
+        cell = database.find(avgDiff[4:], in_column=1)
+        print("Updating class response to " + cell.value + ". Cell updated to A%s" % (cell.row))
+        cellA1Diff = "B" + str(cell.row)
+        avgDiff = database.acell(cellA1Diff, value_render_option='FORMULA').value
+
     print("Updating difficulty")
 
     # create string for new difficulty
@@ -100,8 +122,9 @@ for i in range(startLine, endLine + 1):
         # find place to insert review, difficulty, date
         print("Finding next difficulty...")
 
-        diffList = database.get(cellA1Diff + ":B" + str(cell.row + 100), value_render_option="FORMULA")  # searches 100 lines below current diff. If more than 100 reviews, this will need to be updated.
-        empty_line = "[empty string]"  # update this string into a value that won't be entered as a comment.
+        # searches 100 lines below current diff. If more than 100 reviews, this will need to be updated.
+        diffList = database.get(cellA1Diff + ":B" + str(cell.row + 100), value_render_option="FORMULA")  
+        empty_line = "[empty line]"  # update this string into a value that won't be entered as a comment.
 
         flat_list = []
         for sublist in diffList:
@@ -122,11 +145,23 @@ for i in range(startLine, endLine + 1):
                 break
                 
         nextDiff += 1
+
         print("Next difficulty found at cell B" + str(nextDiff + cell.row))
 
-        # add review
-        database.insert_row(rowToInsert, index=int(nextDiff + cell.row))
-        print("Row insert successful")
+        if (nextDiff == 1 and str(database.acell("C" + str(int(cell.row))).value) == "None"):
+            # currently no comments, but has a difficulty
+
+            cell_list = database.range('C' + str(cell.row) + ':E' + str(cell.row))
+            cell_list[0].value = respComment
+            cell_list[1].value = respDiff
+            cell_list[2].value = respDate
+
+            database.update_cells(cell_list)
+            print("Added first review for existing class.")
+        else:
+            # add review
+            database.insert_row(rowToInsert, index=int(nextDiff + cell.row))
+            print("Row insert successful")
 
         database.format('A' + str(nextDiff + cell.row) + ':E' + str(nextDiff + cell.row), {"backgroundColor":{"red":1,"green":1,"blue":1}})
     print("----------------------------------")
@@ -143,4 +178,4 @@ database.format('C', {"wrapStrategy":"WRAP"})
 # Center align columns D and E
 database.format('D:E', {"horizontalAlignment":"CENTER"})
 
-print("Success! Added " + str(total) + " reviews.")
+print("Success! Added " + str(total) + " review(s).")
