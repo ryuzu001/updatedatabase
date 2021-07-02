@@ -124,7 +124,7 @@ for i in range(startLine, endLine + 1):
 
         # searches 100 lines below current diff. If more than 100 reviews, this will need to be updated.
         diffList = database.get(cellA1Diff + ":B" + str(cell.row + 100), value_render_option="FORMULA")  
-        empty_line = "[empty line]"  # update this string into a value that won't be entered as a comment.
+        empty_line = "[empty string]"  # update this string into a value that won't be entered as a comment.
 
         flat_list = []
         for sublist in diffList:
@@ -159,7 +159,12 @@ for i in range(startLine, endLine + 1):
             database.update_cells(cell_list)
             print("Added first review for existing class.")
         else:
-            # add review
+            # check for 'Note: Formerly [class]' 
+            formerCheck = str(database.acell('C' + str(int(nextDiff + cell.row - 1))).value)
+            if (formerCheck[:14] == "Note: Formerly"):
+                nextDiff -= 1
+
+            # add row
             database.insert_row(rowToInsert, index=int(nextDiff + cell.row))
             print("Row insert successful")
 
