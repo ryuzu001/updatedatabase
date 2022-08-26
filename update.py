@@ -10,10 +10,8 @@ creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", sco
 client = gspread.authorize(creds)
 
 # Get spreadsheets
-# database = client.open("UCR class difficulty database").sheet1         # The name of the database spreadsheet
-# responses = client.open("ucr survey (Responses)").sheet1               # The name of the responses spreadsheet
-database = client.open("cdbTEST").sheet1         # The name of the database spreadsheet
-responses = client.open("responsesTEST").sheet1               # The name of the responses spreadsheet
+database = client.open("UCR class difficulty database").sheet1         # The name of the database spreadsheet
+responses = client.open("ucr survey (Responses)").sheet1               # The name of the responses spreadsheet
 
 # Use input params as start/end lines
 if (len(sys.argv) != 3):
