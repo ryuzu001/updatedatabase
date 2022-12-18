@@ -202,6 +202,14 @@ for i in range(startLine, endLine + 1):
 # format all rows
 print("Formatting all rows")
 
+# Format Number column B
+database.format('B', {
+            "numberFormat": {
+                    "type": "NUMBER",
+                    "pattern": "##.00"
+                }
+            })
+
 # Wrap column C
 database.format('C', {"wrapStrategy":"WRAP"})
 
