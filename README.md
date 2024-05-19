@@ -28,8 +28,10 @@ First, install [python](https://www.python.org/) on your computer
 
 Second, install [gspread](https://gspread.readthedocs.io/en/latest/)
 
-Next, create a new project in Google Cloud Platform, and enable the Google Drive and Google Sheets API. Download the credentials `.json` file.
+Next, create a new project in Google Cloud Platform, and enable the Google Drive and Google Sheets API. Download the `.json` file.
 [Here (first 3 minutes)](https://www.youtube.com/watch?v=cnPlKLEGR7E) is a nice video tutorial.
+
+Once your project is set up, create a Google Cloud Service Account. This account is the account that the script will use to update the sheet itself. Download the Service Account's private key and name it `credentials.json`. Put this file in the same level as the `update.py` script.
 
 Finally, navigate to the location of `update.py` and run it. The first parameter is the line in the responses spreadsheet to start at, and the second is the line to end at (inclusive)
 
